@@ -1,22 +1,24 @@
 import {
-  Droplet,
-  TestTube,
-  Dna,
-  Microscope,
-  Activity,
-  Stethoscope,
-  FlaskConical,
+  WashingMachine,
+  Shirt,
+  Sparkles,
+  Zap,
+  Bed,
+  Footprints,
+  Building2,
+  Droplets,
   type LucideIcon,
 } from "lucide-react";
 
 const icons: Record<string, LucideIcon> = {
-  droplet: Droplet,
-  "test-tube": TestTube,
-  dna: Dna,
-  microscope: Microscope,
-  activity: Activity,
-  stethoscope: Stethoscope,
-  flask: FlaskConical,
+  "washing-machine": WashingMachine,
+  shirt: Shirt,
+  sparkles: Sparkles,
+  zap: Zap,
+  bed: Bed,
+  footprints: Footprints,
+  building: Building2,
+  droplets: Droplets,
 };
 
 export function ServiceIcon({
@@ -26,6 +28,6 @@ export function ServiceIcon({
   name: string;
   className?: string;
 }) {
-  const Icon = icons[name] ?? FlaskConical;
+  const Icon = icons[name] ?? Droplets;
   return <Icon className={className} aria-hidden="true" />;
 }

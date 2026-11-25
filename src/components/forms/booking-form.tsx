@@ -1,597 +1,305 @@
 "use client";
 
-import { useForm, useWatch, Controller } from "react-hook-form";
-import { useActionState, useEffect, useMemo, useRef } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import {
-  Loader2,
-  CalendarCheck,
+  Send,
   CircleCheck,
   AlertCircle,
-  User,
-  FlaskConical,
-  Home,
-  Building2,
+  MessageCircle,
+  CalendarCheck,
+  Info,
 } from "lucide-react";
 import { zodResolver } from "@/lib/zod-resolver";
-import { bookingSchema, type BookingInput } from "@/lib/validation/booking";
-import { submitBooking, type ActionResult } from "@/actions/booking";
-import { bookableDates, slotsForDate, formatDateLong } from "@/lib/hours";
+import { Confetti } from "@/components/ui/confetti";
+import { bookingSchema, type BookingInput } from "@/lib/validation";
+import { services } from "@/data/services";
+import { plans } from "@/data/pricing";
+import { site, whatsappHref } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
-const inputClass =
-  "w-full rounded-xl border border-navy-200 bg-white px-4 py-3 text-sm text-navy-800 placeholder:text-navy-300 transition focus:border-crimson-500 focus:outline-none focus:ring-2 focus:ring-crimson-500/20";
-const labelClass = "mb-1.5 block text-xs font-bold uppercase tracking-wider text-navy-500";
-const legendClass = "mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-navy-500";
-
-type Option = { id: string; name: string; slug: string; price?: number };
+const slots = [
+  { value: "", label: "Any time (we'll confirm)" },
+  { value: "Morning (8 AM – 12 PM)", label: "Morning (8 AM – 12 PM)" },
+  { value: "Afternoon (12 PM – 4 PM)", label: "Afternoon (12 PM – 4 PM)" },
+  { value: "Evening (4 PM – 8 PM)", label: "Evening (4 PM – 8 PM)" },
+];
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-red-600">
+    <p role="alert" className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
       <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       {message}
     </p>
   );
 }
 
-export function BookingForm({
-  services,
-  packages,
-  preselectedType,
-  preselectedId,
-}: {
-  services: Option[];
-  packages: Option[];
-  preselectedType: "service" | "package" | null;
-  preselectedId: string | null;
-}) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction, pending] = useActionState<
-    ActionResult<{ reference: string }>,
-    FormData
-  >(submitBooking, undefined as unknown as ActionResult<{ reference: string }>);
+type Props = {
+  preselectedService?: string | null;
+  preselectedPlan?: string | null;
+};
 
-  const initial = useMemo(() => {
-    if (preselectedType && preselectedId) {
-      const list = preselectedType === "service" ? services : packages;
-      const match = list.find(
-        (o) => o.slug === preselectedId || o.id === preselectedId
-      );
-      if (match) return `${preselectedType}:${match.id}`;
-    }
-    return "";
-  }, [preselectedType, preselectedId, services, packages]);
+function todayISO() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
 
-  const dates = useMemo(() => bookableDates(new Date(), 60), []);
+/** Booking form → validates, then opens a pre-filled WhatsApp pickup request. */
+export function BookingForm({ preselectedService, preselectedPlan }: Props) {
+  const [sentLink, setSentLink] = useState<string | null>(null);
+
+  const initialService =
+    services.find((s) => s.slug === preselectedService)?.name ?? "";
+  const initialPlan = plans.find((p) => p.slug === preselectedPlan);
 
   const {
     register,
     handleSubmit,
-    control,
-    reset,
-    setValue,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<BookingInput>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      website: "",
-      fullName: "",
-      email: "",
+      name: "",
       phone: "",
-      dateOfBirth: "",
-      gender: undefined,
       address: "",
-      itemType: undefined,
-      itemId: initial || "",
-      collectionType: undefined,
-      preferredDate: dates[0] ?? "",
-      preferredTime: "",
-      doctorName: "",
+      service: initialService,
+      pickupDate: todayISO(),
+      slot: "",
       notes: "",
-      conditions: "",
-      emergencyName: "",
-      emergencyPhone: "",
-      consent: false as unknown as true,
+      website: "",
     },
   });
 
-  // Apply ?service= / ?package= preselection once options are known.
-  useEffect(() => {
-    if (initial) {
-      const [type, id] = initial.split(":");
-      setValue("itemType", type as "service" | "package", { shouldValidate: true });
-      setValue("itemId", id, { shouldValidate: true });
-    }
-  }, [initial, setValue]);
-
-  const itemType = useWatch({ control, name: "itemType" });
-  const preferredDate = useWatch({ control, name: "preferredDate" });
-
-  const slots = useMemo(
-    () => (preferredDate ? slotsForDate(preferredDate) : []),
-    [preferredDate]
-  );
-
-  // If the chosen day's slots change, drop an invalid selection.
-  useEffect(() => {
-    const current = control._formValues.preferredTime;
-    if (current && slots.length > 0 && !slots.some((s) => s.value === current)) {
-      setValue("preferredTime", "", { shouldValidate: true });
-    }
-  }, [slots, control, setValue]);
-
-  const selected = state?.ok ? state.data : null;
-
   const onValid = (data: BookingInput) => {
-    const fd = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-      if (typeof value === "string") fd.append(key, value);
-      if (typeof value === "boolean") fd.append(key, value ? "true" : "");
-    });
-    formAction(fd);
+    // Honeypot — bots fill this in; silently drop them.
+    if (data.website) return;
+
+    const body = [
+      `Hello ${site.name}, I'd like to book a pickup.`,
+      "",
+      `Name: ${data.name}`,
+      `Phone: ${data.phone}`,
+      `Pickup address: ${data.address}`,
+      `Service: ${data.service}`,
+      initialPlan ? `Plan: ${initialPlan.name} (${initialPlan.slug})` : null,
+      `Pickup date: ${data.pickupDate}`,
+      data.slot ? `Preferred time: ${data.slot}` : "Preferred time: Any time",
+      data.notes ? `Notes: ${data.notes}` : null,
+      "",
+      "Please confirm the slot and the final quote.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const link = whatsappHref(body);
+    setSentLink(link);
+    window.open(link, "_blank", "noopener,noreferrer");
   };
 
-  useEffect(() => {
-    if (selected) {
-      reset();
-      formRef.current?.reset();
-    }
-  }, [selected, reset]);
-
-  /* ------------------------------- Success view ------------------------------ */
-  if (selected) {
+  if (sentLink) {
     return (
       <div
         role="status"
-        className="flex flex-col items-center rounded-[1.5rem] border border-crimson-200 bg-white px-6 py-14 text-center shadow-card"
+        className="relative flex flex-col items-center overflow-hidden rounded-[2rem] border border-lime-200 bg-lime-50 px-6 py-16 text-center"
       >
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-crimson-50 text-crimson-600">
-          <CircleCheck className="h-9 w-9" aria-hidden="true" />
-        </span>
-        <h2 className="mt-5 text-2xl font-extrabold text-navy-800">
-          Booking received!
+        <Confetti />
+        <CircleCheck className="h-12 w-12 text-lime-700" aria-hidden="true" />
+        <h2 className="mt-4 font-heading text-2xl font-extrabold tracking-tight text-ink">
+          Your pickup request is ready!
         </h2>
-        <p className="mt-2 text-sm text-navy-500">
-          Your booking reference is
+        <p className="mt-2 max-w-md text-sm leading-relaxed text-body">
+          We&apos;ve opened WhatsApp with your details pre-filled. Press send
+          there and our team will confirm your pickup — usually within minutes,
+          {site.hoursLabel.toLowerCase()}.
         </p>
-        <p className="mt-1 rounded-xl bg-cloud-100 px-5 py-2.5 font-mono text-lg font-extrabold tracking-widest text-navy-800">
-          {selected.reference}
-        </p>
-        <p className="mt-4 max-w-md text-sm leading-relaxed text-navy-600">
-          A confirmation email is on its way with your full booking summary.
-          Please arrive 10 minutes early with a valid ID.
-        </p>
-        <div className="mt-7 flex flex-wrap justify-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <a
-            href={`/book/success?ref=${encodeURIComponent(selected.reference)}`}
-            className="rounded-full bg-crimson-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-crimson-600"
+            href={sentLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-[#25D366] px-7 py-3 text-sm font-bold text-ink transition hover:bg-[#1FBE5A]"
           >
-            View booking details
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            Open WhatsApp again
           </a>
           <button
             type="button"
-            onClick={() => reset()}
-            className="rounded-full border-2 border-navy-200 px-6 py-3 text-sm font-bold text-navy-700 transition hover:border-navy-800"
+            onClick={() => setSentLink(null)}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full border-2 border-lime-200 px-7 py-3 text-sm font-bold text-ink transition hover:border-lime-500 hover:text-lime-700"
           >
-            Book another test
+            Edit my request
           </button>
         </div>
       </div>
     );
   }
 
-  /* -------------------------------- Form view -------------------------------- */
-  const serviceOptions = services;
-  const packageOptions = packages;
-
   return (
     <form
-      ref={formRef}
       onSubmit={handleSubmit(onValid)}
       noValidate
+      className="rounded-[2rem] border border-warm-200 bg-white p-6 shadow-card sm:p-8"
       aria-labelledby="booking-form-title"
-      className="space-y-8"
     >
-      {/* 1. Personal details */}
-      <fieldset className="rounded-[1.5rem] border border-navy-100 bg-white p-6 shadow-card sm:p-8">
-        <legend className="flex items-center gap-2 px-1 text-base font-extrabold text-navy-800">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-800 text-xs font-bold text-white">
-            1
-          </span>
-          Your details
-        </legend>
-
-        <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="fullName">
-              Full name <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              autoComplete="name"
-              placeholder="e.g. Adaeze Nwankwo"
-              className={inputClass}
-              aria-invalid={Boolean(errors.fullName)}
-              {...register("fullName")}
-            />
-            <FieldError message={errors.fullName?.message} />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="email">
-              Email address <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              className={inputClass}
-              aria-invalid={Boolean(errors.email)}
-              {...register("email")}
-            />
-            <FieldError message={errors.email?.message} />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="phone">
-              Phone number <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="phone"
-              type="tel"
-              autoComplete="tel"
-              placeholder="07031625384"
-              className={inputClass}
-              aria-invalid={Boolean(errors.phone)}
-              {...register("phone")}
-            />
-            <FieldError message={errors.phone?.message} />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="dateOfBirth">
-              Date of birth <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="dateOfBirth"
-              type="date"
-              autoComplete="bday"
-              className={inputClass}
-              aria-invalid={Boolean(errors.dateOfBirth)}
-              {...register("dateOfBirth")}
-            />
-            <FieldError message={errors.dateOfBirth?.message} />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="gender">
-              Gender <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="gender"
-              className={inputClass}
-              aria-invalid={Boolean(errors.gender)}
-              {...register("gender")}
-            >
-              <option value="">Select…</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="other">Prefer not to say</option>
-            </select>
-            <FieldError message={errors.gender?.message} />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="address">
-              Residential address <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="address"
-              type="text"
-              autoComplete="street-address"
-              placeholder="Street, area, city"
-              className={inputClass}
-              aria-invalid={Boolean(errors.address)}
-              {...register("address")}
-            />
-            <FieldError message={errors.address?.message} />
-          </div>
+      <div className="flex items-start gap-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-tang-400 to-lemon-300 text-ink shadow-glow">
+          <CalendarCheck className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <div>
+          <h2
+            id="booking-form-title"
+            className="font-heading text-2xl font-extrabold tracking-tight text-ink"
+          >
+            Book a pickup
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Fill this in and we&apos;ll open WhatsApp with your request ready
+            to send.
+          </p>
         </div>
-      </fieldset>
+      </div>
 
-      {/* 2. Test selection */}
-      <fieldset className="rounded-[1.5rem] border border-navy-100 bg-white p-6 shadow-card sm:p-8">
-        <legend className="flex items-center gap-2 px-1 text-base font-extrabold text-navy-800">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-800 text-xs font-bold text-white">
-            2
-          </span>
-          Test type &amp; collection
-        </legend>
+      {initialPlan ? (
+        <p className="mt-5 flex items-center gap-2 rounded-2xl border border-tang-200 bg-tang-50 px-4 py-3 text-sm font-semibold text-tang-800">
+          <Info className="h-4 w-4 shrink-0" aria-hidden="true" />
+          Booking the <strong>{initialPlan.name}</strong> plan.
+        </p>
+      ) : null}
 
-        <div className="mt-5 space-y-6">
-          <div>
-            <span className={legendClass}>
-              <FlaskConical className="h-4 w-4 text-crimson-500" aria-hidden="true" />
-              What would you like to test? <span className="text-red-500">*</span>
-            </span>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-navy-400" htmlFor="service-select">
-                  Single service
-                </label>
-                <select
-                  id="service-select"
-                  className={inputClass}
-                  value={itemType === "service" ? (control._formValues.itemId as string) : ""}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setValue("itemType", "service", { shouldValidate: true });
-                      setValue("itemId", e.target.value, { shouldValidate: true });
-                    }
-                  }}
-                >
-                  <option value="">Choose a service…</option>
-                  {serviceOptions.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-navy-400" htmlFor="package-select">
-                  Package (best value)
-                </label>
-                <select
-                  id="package-select"
-                  className={inputClass}
-                  value={itemType === "package" ? (control._formValues.itemId as string) : ""}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setValue("itemType", "package", { shouldValidate: true });
-                      setValue("itemId", e.target.value, { shouldValidate: true });
-                    }
-                  }}
-                >
-                  <option value="">Choose a package…</option>
-                  {packageOptions.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <FieldError message={errors.itemId?.message || errors.itemType?.message} />
-          </div>
-
-          <div>
-            <span className={legendClass}>
-              <User className="h-4 w-4 text-crimson-500" aria-hidden="true" />
-              How should we collect your sample? <span className="text-red-500">*</span>
-            </span>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                {
-                  value: "walk-in",
-                  title: "Walk-in at the lab",
-                  body: "Visit us on Jerome Hwande Street during opening hours.",
-                  Icon: Building2,
-                },
-                {
-                  value: "home",
-                  title: "Home sample collection",
-                  body: "A phlebotomist comes to your address in Makurdi.",
-                  Icon: Home,
-                },
-              ].map(({ value, title, body, Icon }) => (
-                <label
-                  key={value}
-                  className={cn(
-                    "flex cursor-pointer gap-3 rounded-2xl border-2 p-4 transition",
-                    control._formValues.collectionType === value
-                      ? "border-crimson-500 bg-crimson-50"
-                      : "border-navy-100 bg-white hover:border-navy-200"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    value={value}
-                    className="mt-1 h-4 w-4 shrink-0 accent-crimson-500"
-                    {...register("collectionType")}
-                  />
-                  <span>
-                    <span className="flex items-center gap-2 text-sm font-extrabold text-navy-800">
-                      <Icon className="h-4 w-4 text-crimson-600" aria-hidden="true" />
-                      {title}
-                    </span>
-                    <span className="mt-1 block text-xs text-navy-500">{body}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <FieldError message={errors.collectionType?.message} />
-          </div>
+      <div className="mt-7 grid gap-5 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <label
+            className="text-xs font-bold uppercase tracking-wider text-muted"
+            htmlFor="booking-name"
+          >
+            Name <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="booking-name"
+            type="text"
+            autoComplete="name"
+            placeholder="Your full name"
+            className="input-base"
+            aria-invalid={Boolean(errors.name)}
+            {...register("name")}
+          />
+          <FieldError message={errors.name?.message} />
         </div>
-      </fieldset>
 
-      {/* 3. Preferred slot */}
-      <fieldset className="rounded-[1.5rem] border border-navy-100 bg-white p-6 shadow-card sm:p-8">
-        <legend className="flex items-center gap-2 px-1 text-base font-extrabold text-navy-800">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-800 text-xs font-bold text-white">
-            3
-          </span>
-          Preferred date &amp; time
-        </legend>
-
-        <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          <div>
-            <label className={labelClass} htmlFor="preferredDate">
-              Preferred date <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="preferredDate"
-              className={inputClass}
-              aria-invalid={Boolean(errors.preferredDate)}
-              {...register("preferredDate")}
-            >
-              {dates.map((d) => (
-                <option key={d} value={d}>
-                  {formatDateLong(d)}
-                </option>
-              ))}
-            </select>
-            <FieldError message={errors.preferredDate?.message} />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="preferredTime">
-              Preferred time <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="preferredTime"
-              className={inputClass}
-              aria-invalid={Boolean(errors.preferredTime)}
-              {...register("preferredTime")}
-            >
-              <option value="">Choose a time…</option>
-              {slots.map((slot) => (
-                <option key={slot.value} value={slot.value}>
-                  {slot.label}
-                </option>
-              ))}
-            </select>
-            <FieldError message={errors.preferredTime?.message} />
-            <p className="mt-1.5 text-xs text-navy-400">
-              Mon–Fri 8:00 AM – 6:00 PM · Sat 9:00 AM – 3:00 PM · Closed Sundays
-            </p>
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="doctorName">
-              Doctor&apos;s name or referral (optional)
-            </label>
-            <input
-              id="doctorName"
-              type="text"
-              placeholder="e.g. Dr. Okonkwo, or self-referred"
-              className={inputClass}
-              {...register("doctorName")}
-            />
-            <FieldError message={errors.doctorName?.message} />
-          </div>
+        <div className="flex flex-col gap-2">
+          <label
+            className="text-xs font-bold uppercase tracking-wider text-muted"
+            htmlFor="booking-phone"
+          >
+            Phone <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="booking-phone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="0802 755 6093"
+            className="input-base"
+            aria-invalid={Boolean(errors.phone)}
+            {...register("phone")}
+          />
+          <FieldError message={errors.phone?.message} />
         </div>
-      </fieldset>
 
-      {/* 4. Medical notes */}
-      <fieldset className="rounded-[1.5rem] border border-navy-100 bg-white p-6 shadow-card sm:p-8">
-        <legend className="flex items-center gap-2 px-1 text-base font-extrabold text-navy-800">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-800 text-xs font-bold text-white">
-            4
-          </span>
-          Medical notes <span className="text-xs font-semibold text-navy-400">(optional)</span>
-        </legend>
-
-        <div className="mt-5 grid gap-5">
-          <div>
-            <label className={labelClass} htmlFor="notes">
-              Notes or symptoms
-            </label>
-            <textarea
-              id="notes"
-              rows={3}
-              placeholder="Anything you'd like the team to know before your visit"
-              className={`${inputClass} resize-y`}
-              {...register("notes")}
-            />
-            <FieldError message={errors.notes?.message} />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="conditions">
-              Existing conditions or allergies
-            </label>
-            <textarea
-              id="conditions"
-              rows={3}
-              placeholder="e.g. diabetes, penicillin allergy, on medication…"
-              className={`${inputClass} resize-y`}
-              {...register("conditions")}
-            />
-            <FieldError message={errors.conditions?.message} />
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className={labelClass} htmlFor="emergencyName">
-                Emergency contact name
-              </label>
-              <input
-                id="emergencyName"
-                type="text"
-                placeholder="Full name"
-                className={inputClass}
-                {...register("emergencyName")}
-              />
-              <FieldError message={errors.emergencyName?.message} />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="emergencyPhone">
-                Emergency contact phone
-              </label>
-              <input
-                id="emergencyPhone"
-                type="tel"
-                placeholder="0703 …"
-                className={inputClass}
-                {...register("emergencyPhone")}
-              />
-              <FieldError message={errors.emergencyPhone?.message} />
-            </div>
-          </div>
+        <div className="flex flex-col gap-2 sm:col-span-2">
+          <label
+            className="text-xs font-bold uppercase tracking-wider text-muted"
+            htmlFor="booking-address"
+          >
+            Pickup address <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="booking-address"
+            type="text"
+            autoComplete="street-address"
+            placeholder="House number, street, area"
+            className="input-base"
+            aria-invalid={Boolean(errors.address)}
+            {...register("address")}
+          />
+          <FieldError message={errors.address?.message} />
         </div>
-      </fieldset>
 
-      {/* 5. Consent + submit */}
-      <fieldset className="rounded-[1.5rem] border border-navy-100 bg-white p-6 shadow-card sm:p-8">
-        <legend className="flex items-center gap-2 px-1 text-base font-extrabold text-navy-800">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-800 text-xs font-bold text-white">
-            5
-          </span>
-          Consent &amp; submit
-        </legend>
+        <div className="flex flex-col gap-2">
+          <label
+            className="text-xs font-bold uppercase tracking-wider text-muted"
+            htmlFor="booking-service"
+          >
+            Service <span className="text-red-600">*</span>
+          </label>
+          <select
+            id="booking-service"
+            className="input-base"
+            aria-invalid={Boolean(errors.service)}
+            {...register("service")}
+          >
+            <option value="">Choose a service…</option>
+            {services.map((s) => (
+              <option key={s.slug} value={s.name}>
+                {s.name}
+              </option>
+            ))}
+            <option value="Not sure — please advise">Not sure — please advise</option>
+          </select>
+          <FieldError message={errors.service?.message} />
+        </div>
 
-        <Controller
-          control={control}
-          name="consent"
-          render={({ field }) => (
-            <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl bg-cloud-50 p-4">
-              <input
-                type="checkbox"
-                checked={field.value === true}
-                onChange={(e) => field.onChange(e.target.checked)}
-                onBlur={field.onBlur}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded accent-crimson-500"
-                aria-invalid={Boolean(errors.consent)}
-              />
-              <span className="text-sm leading-relaxed text-navy-600">
-                I consent to DexMedix collecting and processing my personal
-                and health data for this booking, in line with the{" "}
-                <a href="/privacy" className="font-semibold text-crimson-600 underline">
-                  Privacy Policy
-                </a>
-                . <span className="text-red-500">*</span>
-              </span>
-            </label>
-          )}
-        />
-        <FieldError message={errors.consent?.message} />
+        <div className="flex flex-col gap-2">
+          <label
+            className="text-xs font-bold uppercase tracking-wider text-muted"
+            htmlFor="booking-date"
+          >
+            Pickup date <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="booking-date"
+            type="date"
+            min={todayISO()}
+            className="input-base"
+            aria-invalid={Boolean(errors.pickupDate)}
+            {...register("pickupDate")}
+          />
+          <FieldError message={errors.pickupDate?.message} />
+        </div>
 
-        {/* Honeypot */}
+        <div className="flex flex-col gap-2 sm:col-span-2">
+          <label
+            className="text-xs font-bold uppercase tracking-wider text-muted"
+            htmlFor="booking-slot"
+          >
+            Preferred time <span className="font-normal text-muted">(optional)</span>
+          </label>
+          <select id="booking-slot" className="input-base" {...register("slot")}>
+            {slots.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:col-span-2">
+          <label
+            className="text-xs font-bold uppercase tracking-wider text-muted"
+            htmlFor="booking-notes"
+          >
+            Notes <span className="font-normal text-muted">(optional)</span>
+          </label>
+          <textarea
+            id="booking-notes"
+            rows={4}
+            placeholder="Stains to pre-treat, fragile items, gate codes…"
+            className="input-base resize-y"
+            {...register("notes")}
+          />
+        </div>
+
+        {/* Honeypot — hidden from humans */}
         <div className="honeypot" aria-hidden="true">
           <label htmlFor="booking-website">Website</label>
           <input
@@ -602,40 +310,22 @@ export function BookingForm({
             {...register("website")}
           />
         </div>
+      </div>
 
-        {!state?.ok && state?.error ? (
-          <p
-            role="alert"
-            className="mt-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
-          >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            {state.error}
-          </p>
-        ) : null}
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className={cn(
+          "mt-8 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-8 py-4 text-sm font-bold text-ink shadow-[0_16px_40px_-14px_rgba(37,211,102,0.7)] transition hover:-translate-y-0.5 hover:bg-[#1FBE5A] disabled:cursor-not-allowed disabled:opacity-70"
+        )}
+      >
+        <Send className="h-4 w-4" aria-hidden="true" />
+        Continue to WhatsApp
+      </button>
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-crimson-500 px-8 py-4 text-sm font-bold text-white shadow-lg shadow-crimson-500/20 transition hover:bg-crimson-600 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
-        >
-          {pending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              Submitting…
-            </>
-          ) : (
-            <>
-              <CalendarCheck className="h-4 w-4" aria-hidden="true" />
-              Confirm Booking
-            </>
-          )}
-        </button>
-
-        <p className="mt-4 text-xs leading-relaxed text-navy-400">
-          No payment is taken online — you settle any fees at the lab. We&apos;ll
-          email your booking summary straight away.
-        </p>
-      </fieldset>
+      <p className="mt-4 text-center text-xs leading-relaxed text-muted">
+        No payment online — your quote is confirmed on WhatsApp before we start.
+      </p>
     </form>
   );
 }

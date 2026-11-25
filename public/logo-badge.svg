@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Raymie's Laundry Services">
+  <defs>
+    <linearGradient id="rb" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#A3E635"/>
+      <stop offset="55%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#F97316"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#rb)"/>
+  <circle cx="32" cy="36" r="13" fill="none" stroke="#1A2E05" stroke-width="3.5" opacity="0.95"/>
+  <circle cx="32" cy="36" r="5" fill="none" stroke="#1A2E05" stroke-width="2.5" opacity="0.8"/>
+  <circle cx="14" cy="14" r="3" fill="#1A2E05" opacity="0.9"/>
+  <circle cx="23" cy="10" r="2" fill="#1A2E05" opacity="0.6"/>
+  <circle cx="10" cy="23" r="2" fill="#1A2E05" opacity="0.6"/>
+</svg>

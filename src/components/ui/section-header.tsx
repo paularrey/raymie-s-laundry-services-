@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 /**
- * Consistent section heading with amber eyebrow, big Sora title (with an
+ * Consistent section heading with accent eyebrow, big Sora title (with an
  * optional serif-accent word) and a soft subtitle.
  */
 export function SectionHeader({
@@ -18,7 +18,6 @@ export function SectionHeader({
 }: {
   eyebrow: string;
   title: string;
-  /** Italic serif accent word appended to the title. */
   accent?: string;
   description?: string;
   align?: "center" | "left";
@@ -34,12 +33,12 @@ export function SectionHeader({
         className
       )}
     >
-      <Badge tone="amber" className={align === "center" ? "mx-auto" : undefined}>
+      <Badge tone="primary" className={align === "center" ? "mx-auto" : undefined}>
         {eyebrow}
       </Badge>
       <h2
         id={id}
-        className="mt-5 text-3xl font-extrabold leading-[1.12] tracking-tight text-navy-950 sm:text-4xl md:text-5xl"
+        className="mt-5 text-3xl font-extrabold leading-[1.12] tracking-tight text-ink sm:text-4xl md:text-5xl"
       >
         {title}
         {accent ? (
@@ -50,7 +49,7 @@ export function SectionHeader({
         ) : null}
       </h2>
       {description ? (
-        <p className="mt-5 text-base leading-relaxed text-navy-500 sm:text-lg">
+        <p className="mt-5 text-base leading-relaxed text-muted sm:text-lg">
           {description}
         </p>
       ) : null}

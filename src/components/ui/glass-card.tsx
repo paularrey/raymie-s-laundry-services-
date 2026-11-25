@@ -13,9 +13,9 @@ export function GlassCard({
   );
 }
 
-/** Slowly rotating circular text badge ("Accurate results * Fast turnaround *"). */
+/** Slowly rotating circular text badge. */
 export function RotatingBadge({
-  text = "Accurate results · Fast turnaround · ",
+  text = "Open 24/7  ✦  Free pickup  ✦  ",
   className,
 }: {
   text?: string;
@@ -38,19 +38,20 @@ export function RotatingBadge({
             />
           </defs>
           <text
-            fill="#8F0E22"
+            fill="#17181A"
             fontSize="11"
             fontWeight="700"
             letterSpacing="2.2"
-            fontFamily="var(--font-sora), sans-serif"
+            fontFamily="var(--font-heading), sans-serif"
           >
             <textPath href="#badge-circle">{text.repeat(2)}</textPath>
           </text>
         </svg>
       </div>
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-crimson-700 text-white shadow-crimson">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-tang-400 to-lemon-300 text-ink shadow-glow">
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 12h4l2-7 4 14 2-7h6" />
+          <path d="M12 3c-1.5 3-5 4.5-5 8a5 5 0 0 0 10 0c0-3.5-3.5-5-5-8Z" />
+          <path d="M12 14v4" />
         </svg>
       </span>
     </div>

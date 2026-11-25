@@ -23,8 +23,8 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
               className={cn(
                 "overflow-hidden rounded-[1.5rem] border transition",
                 isOpen
-                  ? "border-crimson-700/30 bg-cloud-100 shadow-card"
-                  : "border-cloud-200 bg-white hover:border-navy-200"
+                  ? "border-lime-700/30 bg-warm-100 shadow-card"
+                  : "border-warm-200 bg-white hover:border-lime-200"
               )}
             >
               <h3>
@@ -35,15 +35,15 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
                   aria-controls={`faqs-panel-${i}`}
                   className="flex min-h-[56px] w-full items-center justify-between gap-4 px-6 py-5 text-left"
                 >
-                  <span className="font-heading text-sm font-extrabold text-navy-950 sm:text-base">
+                  <span className="font-heading text-sm font-extrabold text-ink sm:text-base">
                     {faq.q}
                   </span>
                   <span
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition",
                       isOpen
-                        ? "bg-crimson-700 text-white"
-                        : "bg-cloud-100 text-navy-600"
+                        ? "bg-lime-500 text-ink"
+                        : "bg-warm-100 text-body"
                     )}
                   >
                     <ChevronDown
@@ -70,7 +70,7 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
                     exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
                     transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <p className="px-6 pb-6 text-sm leading-relaxed text-navy-500">
+                    <p className="px-6 pb-6 text-sm leading-relaxed text-muted">
                       {faq.a}
                     </p>
                   </motion.div>

@@ -1,126 +1,127 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useActionState, useEffect, useRef } from "react";
-import { Send, Loader2, CircleCheck, AlertCircle } from "lucide-react";
+import { Send, CircleCheck, AlertCircle, MessageCircle } from "lucide-react";
 import { zodResolver } from "@/lib/zod-resolver";
-import { contactSchema, type ContactInput } from "@/lib/validation/booking";
-import { submitContact, type ContactResult } from "@/actions/contact";
+import { Confetti } from "@/components/ui/confetti";
+import { contactSchema, type ContactInput } from "@/lib/validation";
+import { site, whatsappHref } from "@/lib/site";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p
-      role="alert"
-      className="flex items-center gap-1.5 text-xs font-semibold text-crimson-600"
-    >
+    <p role="alert" className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
       <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       {message}
     </p>
   );
 }
 
+/** Contact form → validates, then opens a pre-filled WhatsApp thread. */
 export function ContactForm() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction, pending] = useActionState<ContactResult, FormData>(
-    submitContact,
-    undefined as unknown as ContactResult
-  );
+  const [sentLink, setSentLink] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<ContactInput>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
       name: "",
-      email: "",
       phone: "",
+      email: "",
       subject: "",
       message: "",
       website: "",
     },
   });
 
-  const succeeded = state?.ok === true;
-
-  useEffect(() => {
-    if (succeeded) {
-      reset();
-      formRef.current?.reset();
-    }
-  }, [succeeded, reset]);
-
   const onValid = (data: ContactInput) => {
-    const fd = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-      if (typeof value === "string") fd.append(key, value);
-    });
-    formAction(fd);
+    // Honeypot — bots fill this in; silently drop them.
+    if (data.website) return;
+
+    const body = [
+      `Hello ${site.name}, I have a question.`,
+      "",
+      `Name: ${data.name}`,
+      `Phone: ${data.phone}`,
+      data.email ? `Email: ${data.email}` : null,
+      `Subject: ${data.subject}`,
+      "",
+      data.message,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const link = whatsappHref(body);
+    setSentLink(link);
+    window.open(link, "_blank", "noopener,noreferrer");
   };
 
-  if (succeeded) {
+  if (sentLink) {
     return (
       <div
         role="status"
-        className="flex flex-col items-center rounded-[2rem] border border-crimson-200 bg-blush-50 px-6 py-16 text-center"
+        className="relative flex flex-col items-center overflow-hidden rounded-[2rem] border border-lime-200 bg-lime-50 px-6 py-16 text-center"
       >
-        <CircleCheck className="h-12 w-12 text-crimson-600" aria-hidden="true" />
-        <h2 className="mt-4 font-heading text-2xl font-extrabold tracking-tight text-navy-950">
-          Message sent — thank you!
+        <Confetti />
+        <CircleCheck className="h-12 w-12 text-lime-700" aria-hidden="true" />
+        <h2 className="mt-4 font-heading text-2xl font-extrabold tracking-tight text-ink">
+          WhatsApp is open — thank you!
         </h2>
-        <p className="mt-2 max-w-sm text-sm leading-relaxed text-navy-600">
-          Our team has received your message and will reply to your email during
-          opening hours, usually within a few hours.
+        <p className="mt-2 max-w-sm text-sm leading-relaxed text-body">
+          Your message has been pre-filled in WhatsApp. Press send there and
+          our team will reply — usually within minutes, {site.hoursLabel}.
         </p>
-        <button
-          type="button"
-          onClick={() => reset()}
-          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full bg-crimson-700 px-7 py-3 text-sm font-bold text-white transition hover:bg-crimson-800"
-        >
-          Send another message
-        </button>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href={sentLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-[#25D366] px-7 py-3 text-sm font-bold text-ink transition hover:bg-[#1FBE5A]"
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            Open WhatsApp again
+          </a>
+          <button
+            type="button"
+            onClick={() => setSentLink(null)}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full border-2 border-lime-200 px-7 py-3 text-sm font-bold text-ink transition hover:border-lime-500 hover:text-lime-700"
+          >
+            Send another message
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <form
-      ref={formRef}
       onSubmit={handleSubmit(onValid)}
       noValidate
-      className="rounded-[2rem] border border-cloud-200 bg-white p-6 shadow-card sm:p-8"
+      className="rounded-[2rem] border border-warm-200 bg-white p-6 shadow-card sm:p-8"
       aria-labelledby="contact-form-title"
     >
       <h2
         id="contact-form-title"
-        className="font-heading text-2xl font-extrabold tracking-tight text-navy-950"
+        className="font-heading text-2xl font-extrabold tracking-tight text-ink"
       >
         Send us a message
       </h2>
-      <p className="mt-1.5 text-sm text-navy-500">
-        Fill in the form and we&apos;ll get back to you by email or phone.
+      <p className="mt-1.5 text-sm text-muted">
+        Fill in the form — we&apos;ll open WhatsApp with your message ready to
+        send.
       </p>
-
-      {!state?.ok && state?.error ? (
-        <p
-          role="alert"
-          className="mt-5 flex items-start gap-2 rounded-2xl border border-crimson-200 bg-crimson-50 px-4 py-3 text-sm font-semibold text-crimson-700"
-        >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          {state.error}
-        </p>
-      ) : null}
 
       <div className="mt-7 grid gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-2 sm:col-span-2">
           <label
-            className="text-xs font-bold uppercase tracking-wider text-navy-500"
+            className="text-xs font-bold uppercase tracking-wider text-muted"
             htmlFor="contact-name"
           >
-            Name <span className="text-crimson-600">*</span>
+            Name <span className="text-red-600">*</span>
           </label>
           <input
             id="contact-name"
@@ -136,10 +137,29 @@ export function ContactForm() {
 
         <div className="flex flex-col gap-2">
           <label
-            className="text-xs font-bold uppercase tracking-wider text-navy-500"
+            className="text-xs font-bold uppercase tracking-wider text-muted"
+            htmlFor="contact-phone"
+          >
+            Phone <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="contact-phone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="0802 755 6093"
+            className="input-base"
+            aria-invalid={Boolean(errors.phone)}
+            {...register("phone")}
+          />
+          <FieldError message={errors.phone?.message} />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label
+            className="text-xs font-bold uppercase tracking-wider text-muted"
             htmlFor="contact-email"
           >
-            Email <span className="text-crimson-600">*</span>
+            Email <span className="font-normal text-muted">(optional)</span>
           </label>
           <input
             id="contact-email"
@@ -153,36 +173,17 @@ export function ContactForm() {
           <FieldError message={errors.email?.message} />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label
-            className="text-xs font-bold uppercase tracking-wider text-navy-500"
-            htmlFor="contact-phone"
-          >
-            Phone <span className="text-crimson-600">*</span>
-          </label>
-          <input
-            id="contact-phone"
-            type="tel"
-            autoComplete="tel"
-            placeholder="07031625384"
-            className="input-base"
-            aria-invalid={Boolean(errors.phone)}
-            {...register("phone")}
-          />
-          <FieldError message={errors.phone?.message} />
-        </div>
-
         <div className="flex flex-col gap-2 sm:col-span-2">
           <label
-            className="text-xs font-bold uppercase tracking-wider text-navy-500"
+            className="text-xs font-bold uppercase tracking-wider text-muted"
             htmlFor="contact-subject"
           >
-            Subject <span className="text-crimson-600">*</span>
+            Subject <span className="text-red-600">*</span>
           </label>
           <input
             id="contact-subject"
             type="text"
-            placeholder="e.g. Question about the Executive Check"
+            placeholder="e.g. Question about the Family Bundle"
             className="input-base"
             aria-invalid={Boolean(errors.subject)}
             {...register("subject")}
@@ -192,10 +193,10 @@ export function ContactForm() {
 
         <div className="flex flex-col gap-2 sm:col-span-2">
           <label
-            className="text-xs font-bold uppercase tracking-wider text-navy-500"
+            className="text-xs font-bold uppercase tracking-wider text-muted"
             htmlFor="contact-message"
           >
-            Message <span className="text-crimson-600">*</span>
+            Message <span className="text-red-600">*</span>
           </label>
           <textarea
             id="contact-message"
@@ -223,26 +224,16 @@ export function ContactForm() {
 
       <button
         type="submit"
-        disabled={pending}
-        className="mt-8 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-crimson-700 to-crimson-500 px-8 py-4 text-sm font-bold text-white shadow-crimson transition hover:-translate-y-0.5 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-70"
+        disabled={isSubmitting}
+        className="mt-8 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-tang-400 to-lemon-300 px-8 py-4 text-sm font-bold text-ink shadow-glow transition hover:-translate-y-0.5 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {pending ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Sending…
-          </>
-        ) : (
-          <>
-            <Send className="h-4 w-4" aria-hidden="true" />
-            Send Message
-          </>
-        )}
+        <Send className="h-4 w-4" aria-hidden="true" />
+        Continue to WhatsApp
       </button>
 
-      <p className="mt-4 text-xs leading-relaxed text-navy-400">
-        By submitting you agree that we may process your details to respond to
-        your enquiry. See our{" "}
-        <a href="/privacy" className="font-semibold text-crimson-700 underline">
+      <p className="mt-4 text-xs leading-relaxed text-muted">
+        Nothing is sent to a server — your message opens in WhatsApp. See our{" "}
+        <a href="/privacy" className="font-semibold text-lime-700 underline">
           Privacy Policy
         </a>
         .

@@ -4,21 +4,21 @@ import { cn } from "@/lib/utils";
 export function Badge({
   children,
   className,
-  tone = "crimson",
+  tone = "primary",
   icon,
 }: {
   children: React.ReactNode;
   className?: string;
-  tone?: "crimson" | "blush" | "navy" | "amber" | "cloud" | "glass";
+  tone?: "primary" | "accent" | "leaf" | "cream" | "glass" | "mint";
   icon?: React.ReactNode;
 }) {
   const tones = {
-    crimson: "bg-crimson-100 text-crimson-800",
-    blush: "bg-blush-100 text-crimson-800",
-    navy: "bg-navy-950 text-white",
-    amber: "bg-amber-500 text-navy-950",
-    cloud: "bg-cloud-100 text-navy-700",
-    glass: "glass text-navy-800",
+    primary: "bg-lime-100 text-ink",
+    accent: "bg-tang-100 text-tang-800",
+    leaf: "bg-lime-300 text-ink",
+    cream: "bg-warm-100 text-body",
+    glass: "glass text-ink",
+    mint: "bg-[#25D366]/15 text-[#128C4A]",
   } as const;
 
   return (

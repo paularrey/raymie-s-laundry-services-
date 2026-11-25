@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarCheck, Phone, MessageCircle, ArrowUp } from "lucide-react";
-import { site } from "@/lib/site";
+import { Phone, MessageCircle, ArrowUp } from "lucide-react";
+import { site, whatsappHref, defaultWhatsAppMessage } from "@/lib/site";
 
 const subscribeScroll = (onChange: () => void) => {
   window.addEventListener("scroll", onChange, { passive: true });
@@ -16,15 +16,14 @@ const getServerSnapshot = () => false;
 
 /**
  * Floating engagement widgets:
- *  - Desktop: WhatsApp bubble (bottom-right) + back-to-top (appears on scroll)
- *  - Mobile: sticky bottom bar with Book + Call + WhatsApp
+ *  - Desktop: pulsing WhatsApp bubble (bottom-right) + back-to-top
+ *  - Mobile: sticky bottom bar with Call + WhatsApp + Book
  */
 export function FloatingWidgets() {
   const showTop = useSyncExternalStore(subscribeScroll, getScrolled, getServerSnapshot);
   const mounted = useSyncExternalStore(subscribeNothing, () => true, getServerSnapshot);
 
-  // TODO: replace with the real WhatsApp number when available.
-  const whatsappHref = `https://wa.me/${site.phoneHref.replace("+", "")}?text=${encodeURIComponent("Hello DexMedix, I'd like to book a test.")}`;
+  const whatsappUrl = whatsappHref(defaultWhatsAppMessage);
 
   return (
     <>
@@ -40,7 +39,7 @@ export function FloatingWidgets() {
               type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               aria-label="Back to top"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-navy-800 shadow-card ring-1 ring-navy-100 transition hover:bg-cloud-100"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink shadow-card ring-1 ring-lime-100 transition hover:bg-warm-100"
             >
               <ArrowUp className="h-4.5 w-4.5" aria-hidden="true" />
             </motion.button>
@@ -48,41 +47,42 @@ export function FloatingWidgets() {
         </AnimatePresence>
 
         <a
-          href={whatsappHref}
+          href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Chat with DexMedix on WhatsApp"
-          className="group flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-card transition hover:scale-105 hover:shadow-card-hover"
+          aria-label={`Chat with ${site.name} on WhatsApp`}
+          className="group flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-ink shadow-card animate-pulse-glow transition hover:scale-105"
         >
           <MessageCircle className="h-6 w-6" aria-hidden="true" />
         </a>
       </div>
 
       {/* Mobile sticky bottom bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy-100/60 bg-white/90 px-3 py-2.5 backdrop-blur-xl sm:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-lime-100/60 bg-white/90 px-3 py-2.5 backdrop-blur-xl sm:hidden">
         <div className="flex items-center gap-2">
           <a
             href={`tel:${site.phoneHref}`}
             aria-label={`Call ${site.name}`}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-cloud-100 text-navy-800"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-warm-100 text-sm font-bold text-ink"
           >
             <Phone className="h-5 w-5" aria-hidden="true" />
+            Call
           </a>
           <a
-            href={whatsappHref}
+            href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="WhatsApp"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white"
+            aria-label="Chat on WhatsApp"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#25D366] text-sm font-bold text-ink"
           >
             <MessageCircle className="h-5 w-5" aria-hidden="true" />
+            WhatsApp
           </a>
           <Link
             href="/book"
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-crimson-700 to-crimson-500 text-sm font-bold text-white shadow-crimson"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-tang-400 to-lemon-300 text-sm font-bold text-ink shadow-glow"
           >
-            <CalendarCheck className="h-4.5 w-4.5" aria-hidden="true" />
-            Book a Test
+            Book
           </Link>
         </div>
       </div>

@@ -1,34 +1,45 @@
 export const site = {
-  name: process.env.NEXT_PUBLIC_SITE_NAME || "DexMedix",
-  tagline: "Accurate Results. Healthier Tomorrow.",
+  name: process.env.NEXT_PUBLIC_SITE_NAME || "Raymie's Laundry Services",
+  tagline: "Fresh clothes, zero hassle.",
   description:
-    "DexMedix is a modern medical laboratory in Makurdi, Benue State offering accurate testing, fast turnaround times and convenient booking — in-lab or home sample collection.",
+    "A friendly laundry offering pickup, wash, dry cleaning and delivery — open 24/7.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
   logo: "/logo.jpeg",
-  address: "Jerome Hwande Street, Beside Hallydays Hotel, Ankpa quarter, Makurdi, Benue state, Nigeria",
-  phone: "07031625384",
-  phoneHref: "+2347031625384",
-  email: "info@dexmedix.com",
-  notifyEmail: process.env.NOTIFY_EMAIL || "paulmichaelomega@gmail.com",
+  address: "Citywide pickup & drop-off",
+  phone: "0802 755 6093",
+  phoneHref: "+2348027556093",
+  whatsapp: "2348027556093",
+  email: "",
+  hoursLabel: "Open 24/7",
   openingHours: [
-    { day: "Monday – Friday", hours: "8:00 AM – 6:00 PM", short: "Mon-Fri" },
-    { day: "Saturday", hours: "9:00 AM – 3:00 PM", short: "Sat" },
-    { day: "Sunday", hours: "Closed", short: "Sun" },
+    { day: "Monday – Sunday", hours: "Open 24/7", short: "Daily" },
   ],
   nav: [
     { label: "Home", href: "/" },
-    { label: "About Us", href: "/about" },
     { label: "Services", href: "/services" },
-    { label: "Test Packages", href: "/packages" },
-    { label: "Book a Test", href: "/book" },
+    { label: "Packages", href: "/pricing" },
+    { label: "How It Works", href: "/how-it-works" },
+    { label: "About", href: "/about" },
+    { label: "FAQ", href: "/faqs" },
     { label: "Contact", href: "/contact" },
   ],
   socials: [
-    { label: "Facebook", href: "https://facebook.com" },
-    { label: "Instagram", href: "https://instagram.com" },
-    { label: "X (Twitter)", href: "https://x.com" },
-    { label: "LinkedIn", href: "https://linkedin.com" },
+    { label: "Facebook", href: "TODO-facebook-url" },
+    { label: "Instagram", href: "TODO-instagram-url" },
+    { label: "X (Twitter)", href: "TODO-x-url" },
+    { label: "LinkedIn", href: "TODO-linkedin-url" },
   ],
+  credit: "Powered by ECHELON TECHNOLOGIES",
 } as const;
 
 export type NavItem = (typeof site.nav)[number];
+
+/** WhatsApp deep link — number lives only here, never hardcoded in components. */
+export function whatsappHref(message?: string) {
+  const base = `https://wa.me/${site.whatsapp}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}
+
+/** Default pre-filled WhatsApp greeting used by floating widgets and CTAs. */
+export const defaultWhatsAppMessage =
+  "Hello, I'd like to book a pickup with Raymie's Laundry Services.";

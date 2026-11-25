@@ -1,8 +1,3 @@
-/**
- * Public testimonials — static, typed, no database access.
- * Content shown in the home testimonial slider.
- */
-
 export type StaticTestimonial = {
   id: string;
   name: string;
@@ -15,20 +10,38 @@ export type StaticTestimonial = {
 
 const seed: Omit<StaticTestimonial, "id">[] = [
   {
-    name: "Sarah A.",
-    initials: "SA",
-    role: "Makurdi, Nigeria",
+    name: "Adaeze N.",
+    initials: "AN",
+    role: "Lagos, Nigeria",
     content:
-      "I booked online in the evening and was seen the next morning. The results came through before noon and the nurse explained everything patiently. It genuinely felt easy.",
+      "Booked a pickup on WhatsApp at 10pm and someone was at my gate the next morning. Everything came back folded like a shop display. This is how laundry should work.",
     rating: 5,
     published: true,
   },
   {
     name: "Tunde B.",
     initials: "TB",
-    role: "Makurdi, Benue",
+    role: "Abuja, Nigeria",
     content:
-      "Home sample collection was the decider for me — my mother can't queue at a lab anymore. Clean, on time, and the doctor's summary made the numbers make sense.",
+      "The express service saved me — same-day shirts for a morning meeting, perfectly pressed. I've stopped doing weekends of washing entirely.",
+    rating: 5,
+    published: true,
+  },
+  {
+    name: "Chidinma O.",
+    initials: "CO",
+    role: "Port Harcourt, Nigeria",
+    content:
+      "My duvet came back smelling incredible and the stain I'd given up on was gone. The team texted me at every step. Genuinely premium.",
+    rating: 5,
+    published: true,
+  },
+  {
+    name: "Emeka & Funke A.",
+    initials: "EF",
+    role: "Ibadan, Nigeria",
+    content:
+      "We run a small guesthouse and Raymie's handles all our linens on a fixed schedule now. Never late, never a missing towel. Total peace of mind.",
     rating: 5,
     published: true,
   },

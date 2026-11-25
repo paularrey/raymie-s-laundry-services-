@@ -1,177 +1,175 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Timer, Home, BadgeCheck } from "lucide-react";
+import { ArrowRight, CalendarCheck, Clock, Heart, Sparkles } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
-import { ECGLine } from "@/components/ui/ecg-line";
-import { GlassCard, RotatingBadge } from "@/components/ui/glass-card";
+import { RotatingBadge } from "@/components/ui/glass-card";
+import { heroSlides } from "@/data/hero";
+import { whatsappHref, defaultWhatsAppMessage } from "@/lib/site";
 
-const glassStats = [
-  { label: "Results in 24h", Icon: Timer },
-  { label: "Home collection", Icon: Home },
-  { label: "Certified lab", Icon: BadgeCheck },
+const chips: { icon: LucideIcon; label: string; dot: string; pos: string }[] = [
+  { icon: Clock, label: "Open 24/7", dot: "bg-lemon-300", pos: "-left-3 top-[16%] sm:-left-8 lg:-left-14" },
+  { icon: CalendarCheck, label: "Free pickup", dot: "bg-tang-300", pos: "-right-2 top-[46%] sm:-right-6 lg:-right-12" },
+  { icon: Heart, label: "Fabric-safe care", dot: "bg-lime-300", pos: "-left-2 bottom-[14%] sm:-left-6 lg:-left-10" },
 ];
 
-/* TODO: replace avatars with real patient photos (or keep initials). */
-const avatars = [
-  { initials: "AO", bg: "bg-crimson-600" },
-  { initials: "TB", bg: "bg-navy-800" },
-  { initials: "SA", bg: "bg-amber-500 text-navy-950" },
-  { initials: "KM", bg: "bg-crimson-800" },
+const bubbles = [
+  { left: "18%", size: 16, duration: "6s", delay: "0s" },
+  { left: "42%", size: 10, duration: "7.2s", delay: "1.4s" },
+  { left: "68%", size: 20, duration: "8s", delay: "2.8s" },
+  { left: "84%", size: 12, duration: "6.6s", delay: "4s" },
 ];
-
-function Stars({ className }: { className?: string }) {
-  return (
-    <span className={`inline-flex gap-0.5 ${className ?? ""}`} aria-label="4.9 out of 5 stars">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} viewBox="0 0 24 24" className="h-4 w-4 fill-amber-500" aria-hidden="true">
-          <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-      ))}
-    </span>
-  );
-}
 
 export function Hero() {
-  const reduce = useReducedMotion();
+  const [index, setIndex] = useState(0);
+  const slide = heroSlides[index] ?? heroSlides[0];
 
-  const container = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.09, delayChildren: 0.1 } },
-  };
-  const item = {
-    hidden: { opacity: 0, y: 26 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } },
-  };
+  useEffect(() => {
+    if (heroSlides.length < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = setInterval(() => setIndex((i) => (i + 1) % heroSlides.length), 5200);
+    return () => clearInterval(id);
+  }, []);
 
   return (
-    <section className="relative overflow-hidden bg-white pt-28 pb-16 md:pt-36 md:pb-24">
-      {/* Blurred crimson + navy blobs */}
-      <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-40 h-[34rem] w-[34rem] rounded-full bg-crimson-200/50 blur-[120px]" />
-      <div aria-hidden="true" className="pointer-events-none absolute -left-32 top-1/3 h-96 w-96 rounded-full bg-navy-200/40 blur-[110px]" />
-      <div aria-hidden="true" className="pointer-events-none absolute bottom-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-200/30 blur-[100px]" />
+    <section
+      className="relative overflow-hidden bg-white pb-14 pt-10 md:pb-20 md:pt-16"
+      aria-labelledby="hero-title"
+    >
+      
+      
+      
 
-      <Container>
-        <motion.div
-          variants={reduce ? undefined : container}
-          initial={reduce ? undefined : "hidden"}
-          animate={reduce ? undefined : "show"}
-          className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14"
-        >
-          {/* ------------------------------ Copy ------------------------------ */}
-          <div className="relative z-10">
-            <motion.div variants={reduce ? undefined : item}>
-              <Badge tone="crimson">
-                <span className="h-1.5 w-1.5 rounded-full bg-crimson-700" />
-                Trusted lab in Makurdi
-              </Badge>
-            </motion.div>
+      <Container className="relative">
+        <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
+          <div className="relative z-10 max-w-xl">
+            <Badge tone="accent" icon={<Sparkles className="h-3.5 w-3.5" />}>
+              {slide.eyebrow}
+            </Badge>
 
-            <motion.h1
-              variants={reduce ? undefined : item}
-              className="mt-6 font-heading text-5xl font-extrabold leading-[1.04] tracking-tight text-navy-950 sm:text-6xl lg:text-7xl xl:text-[5.25rem]"
+            <h1
+              id="hero-title"
+              className="mt-5 font-heading text-4xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-5xl lg:text-6xl xl:text-[3.75rem]"
             >
-              Accurate tests.
-              <br />
-              <span className="accent-word">Better</span> decisions.
-            </motion.h1>
+              {slide.title}{" "}
+              <span className="accent-word">{slide.accent}</span>
+              {slide.rest}
+            </h1>
 
-            {/* Animated ECG underline */}
-            <motion.div variants={reduce ? undefined : item} className="mt-2 max-w-md">
-              <ECGLine className="h-12" animate />
-            </motion.div>
+            <p className="mt-5 max-w-lg text-base leading-relaxed text-body sm:text-lg">
+              {slide.body}
+            </p>
 
-            <motion.p
-              variants={reduce ? undefined : item}
-              className="mt-5 max-w-xl text-lg leading-relaxed text-navy-500"
-            >
-              From routine blood work to advanced molecular diagnostics, DexMedix
-              delivers dependable results with 24-hour turnaround — at our
-              Makurdi lab or at your home.
-            </motion.p>
-
-            <motion.div variants={reduce ? undefined : item} className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/book"
-                className="group inline-flex min-h-[52px] items-center gap-2 rounded-full bg-gradient-to-r from-crimson-700 to-crimson-500 px-8 text-base font-bold text-white shadow-crimson transition hover:-translate-y-0.5 hover:shadow-card-hover"
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <a
+                href={whatsappHref(defaultWhatsAppMessage)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="spring inline-flex min-h-[56px] items-center gap-2 rounded-full bg-[#25D366] px-8 text-base font-bold text-ink shadow-[0_16px_40px_-14px_rgba(37,211,102,0.7)] hover:bg-[#1FBE5A]"
               >
-                Book a Test
-                <ArrowRight className="h-4.5 w-4.5 transition group-hover:translate-x-1" aria-hidden="true" />
-              </Link>
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                  <path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.76-1.66-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.19 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35Z" />
+                  <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 18.13c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.36c0-4.54 3.7-8.23 8.25-8.23 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.7 8.23-8.24 8.23Z" />
+                </svg>
+                Book on WhatsApp
+              </a>
               <Link
-                href="/services"
-                className="inline-flex min-h-[52px] items-center rounded-full border-2 border-navy-200 bg-white px-8 text-base font-bold text-navy-800 transition hover:border-navy-950"
+                href="/pricing"
+                className="spring inline-flex min-h-[56px] items-center gap-2 rounded-full border-2 border-lime-500 bg-white px-8 text-base font-bold text-ink hover:bg-lime-50"
               >
-                Explore Services
+                See packages
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-            </motion.div>
+            </div>
 
-            {/* Social proof */}
-            <motion.div variants={reduce ? undefined : item} className="mt-10 flex flex-wrap items-center gap-4">
-              <div className="flex -space-x-3">
-                {avatars.map(({ initials, bg }) => (
-                  <span
-                    key={initials}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 border-white text-xs font-bold text-white ring-1 ring-navy-100 ${bg}`}
-                    aria-hidden="true"
-                  >
-                    {initials}
-                  </span>
+            {heroSlides.length > 1 && (
+              <div className="mt-7 flex items-center gap-2" role="tablist" aria-label="Hero slides">
+                {heroSlides.map((s, i) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={i === index}
+                    aria-label={`Slide ${i + 1}: ${s.eyebrow}`}
+                    onClick={() => setIndex(i)}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${
+                      i === index ? "w-8 bg-tang-500" : "w-2.5 bg-lemon-300 hover:bg-lemon-400"
+                    }`}
+                  />
                 ))}
               </div>
-              <div>
-                <Stars />
-                <p className="mt-0.5 text-sm font-semibold text-navy-600">
-                  <span className="font-extrabold text-navy-950">4.9</span> from 2,000+ patients
-                </p>
-              </div>
-            </motion.div>
+            )}
           </div>
 
-          {/* ------------------------------ Image ----------------------------- */}
-          <motion.div
-            variants={reduce ? undefined : item}
-            className="relative mx-auto w-full max-w-md lg:max-w-none"
-          >
-            <div className="relative aspect-[4/5] w-full overflow-hidden blob-mask bg-navy-100 shadow-[0_40px_90px_-30px_rgba(181,18,43,0.35)]">
-              {/* TODO: replace with a real photo of a DexMedix lab scientist */}
-              <Image
-                src="/images/hero-lab-scientist.jpg"
-                alt="DexMedix laboratory scientist examining a sample under the microscope"
-                fill
-                priority
-                sizes="(min-width: 1024px) 44vw, (min-width: 640px) 70vw, 90vw"
-                className="object-cover"
+          <div className="relative mx-auto w-full max-w-[480px] lg:max-w-none">
+            <div className="relative mx-auto aspect-square w-[88%] max-w-[420px] animate-float-slow sm:w-[78%] lg:w-full lg:max-w-[470px]">
+              <div
+                className="absolute -inset-6 rounded-[3rem] bg-lime-200/70 blur-2xl"
+                aria-hidden="true"
               />
-              <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-navy-950/55 via-transparent to-transparent" />
-            </div>
 
-            {/* Floating glass stat cards */}
-            <div className="absolute inset-0">
-              {glassStats.map(({ label, Icon }, i) => (
-                <GlassCard
-                  key={label}
-                  className={`absolute animate-float ${
-                    i === 0 ? "left-0 top-8" : i === 1 ? "right-0 top-1/3" : "bottom-10 left-4"
-                }`}
-              >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-crimson-100 text-crimson-700">
-                      <Icon className="h-4.5 w-4.5" aria-hidden="true" />
+              <div className="glass relative h-full w-full overflow-hidden rounded-[2.25rem] p-3">
+                <div className="relative h-full w-full overflow-hidden rounded-[1.75rem] bg-white">
+                  <Image
+                    src="/images/washm-door.png"
+                    alt="Washing machine door with swirling water at Raymie's Laundry Services"
+                    fill
+                    priority
+                    sizes="(max-width: 640px) 80vw, (max-width: 1024px) 44vw, 440px"
+                    className="object-contain"
+                  />
+                  <span
+                    className="pointer-events-none absolute left-[8%] top-[6%] h-[34%] w-[40%] -rotate-12 rounded-full bg-gradient-to-br from-white/70 to-transparent blur-[2px]"
+                    aria-hidden="true"
+                  />
+                  {bubbles.map((b) => (
+                    <span
+                      key={b.left}
+                      className="porthole-bubble absolute bottom-0 rounded-full bg-white/70 ring-1 ring-white/70"
+                      style={{
+                        left: b.left,
+                        width: b.size,
+                        height: b.size,
+                        animationDuration: b.duration,
+                        animationDelay: b.delay,
+                      }}
+                      aria-hidden="true"
+                    />
+                  ))}
+                </div>
+                <span
+                  className="pointer-events-none absolute inset-0 rounded-[2.25rem] ring-1 ring-inset ring-white/90"
+                  aria-hidden="true"
+                />
+              </div>
+
+              <RotatingBadge className="absolute -bottom-6 right-0 scale-90 sm:-right-4 sm:scale-100" />
+
+              {chips.map(({ icon: Icon, label, dot, pos }) => (
+                <div key={label} className={`absolute ${pos}`}>
+                  <span className="glass spring flex items-center gap-2 rounded-full py-2 pl-2 pr-4 text-xs font-bold text-ink shadow-card">
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-full ${dot} text-ink`}>
+                      <Icon className="h-4 w-4" aria-hidden="true" />
                     </span>
-                    <span className="whitespace-nowrap text-sm font-bold text-navy-950">{label}</span>
-                  </div>
-                </GlassCard>
+                    {label}
+                  </span>
+                </div>
               ))}
             </div>
+          </div>
+        </div>
 
-            {/* Rotating text badge */}
-            <RotatingBadge className="absolute -right-2 -top-4 hidden md:flex" />
-          </motion.div>
-        </motion.div>
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 border-t border-lime-200/70 pt-6 text-xs font-bold uppercase tracking-[0.16em] text-muted md:mt-16">
+          <span>Open 24/7</span>
+          <span className="hidden h-1 w-1 rounded-full bg-tang-400 sm:block" aria-hidden="true" />
+          <span>Free pickup &amp; delivery</span>
+          <span className="hidden h-1 w-1 rounded-full bg-tang-400 sm:block" aria-hidden="true" />
+          <span>Eco-friendly detergents</span>
+                  </div>
       </Container>
     </section>
   );

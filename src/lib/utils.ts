@@ -2,10 +2,6 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function formatNaira(amount: number) {
-  return `₦${amount.toLocaleString("en-NG")}`;
-}
-
 export function slugify(value: string) {
   return value
     .toLowerCase()

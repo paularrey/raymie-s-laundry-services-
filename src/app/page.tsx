@@ -1,37 +1,31 @@
 import { Hero } from "@/components/home/hero";
 import { TrustMarquee } from "@/components/home/marquee";
-import { ServicesBento } from "@/components/home/services-bento";
+import { ServiceExplorer } from "@/components/home/service-explorer";
 import { StatsBand } from "@/components/home/stats";
 import { HowItWorks } from "@/components/home/how-it-works";
-import { TestPackages } from "@/components/home/packages";
+import { BeforeAfter } from "@/components/home/before-after";
+import { QuoteBuilder } from "@/components/home/quote-builder";
+import { PricingPlans } from "@/components/home/pricing";
 import { WhyChooseUs } from "@/components/home/why-choose-us";
 import { Testimonials } from "@/components/home/testimonials";
+import { CoverageSection } from "@/components/home/coverage";
 import { FaqSection } from "@/components/home/faq";
 import { FinalCta } from "@/components/home/final-cta";
-import {
-  getFeaturedServices,
-  getFeaturedPackagesWithTests,
-  getTestimonials,
-} from "@/lib/queries";
 
-export default async function HomePage() {
-  // Static catalogue data (src/data) — no database access at build or runtime.
-  const [services, packages, testimonials] = await Promise.all([
-    getFeaturedServices(),
-    getFeaturedPackagesWithTests(),
-    getTestimonials(),
-  ]);
-
+export default function HomePage() {
   return (
     <>
       <Hero />
       <TrustMarquee />
-      <ServicesBento services={services} />
+      <ServiceExplorer />
       <StatsBand />
       <HowItWorks />
-      <TestPackages packages={packages} />
+      <BeforeAfter />
+      <QuoteBuilder />
+      <PricingPlans />
       <WhyChooseUs />
-      <Testimonials testimonials={testimonials} />
+      <Testimonials />
+      <CoverageSection />
       <FaqSection />
       <FinalCta />
     </>

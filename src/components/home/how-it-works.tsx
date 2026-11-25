@@ -1,86 +1,101 @@
-import { MousePointerClick, CalendarDays, TestTubeDiagonal } from "lucide-react";
+"use client";
+
+import { useReducedMotion } from "framer-motion";
+import { MessageCircle, Truck, Sparkles, Package, WashingMachine, Shirt } from "lucide-react";
 import { Container, Section } from "@/components/ui/container";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Reveal } from "@/components/ui/reveal";
+import { processSteps } from "@/data/process";
 
-const steps = [
-  {
-    num: "01",
-    title: "Choose your test",
-    body: "Pick a single test or one of our value packages — browse by department or let us help you decide.",
-    Icon: MousePointerClick,
-  },
-  {
-    num: "02",
-    title: "Book a slot",
-    body: "Select walk-in or home collection, then choose a date and 30-minute time slot that suits you.",
-    Icon: CalendarDays,
-  },
-  {
-    num: "03",
-    title: "Get your results",
-    body: "We collect your sample, run it on validated platforms and deliver most results within 24 hours.",
-    Icon: TestTubeDiagonal,
-  },
-];
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  message: MessageCircle,
+  truck: Truck,
+  machine: WashingMachine,
+  shirt: Shirt,
+  sparkles: Sparkles,
+  package: Package,
+};
 
-/** Horizontal 3-step timeline with oversized outlined numbers. */
-export function HowItWorks() {
+function Dial() {
+  const reduce = useReducedMotion();
   return (
-    <Section id="how-it-works" ariaLabelledBy="how-title" className="bg-cloud-100">
+    <div className="relative mx-auto aspect-square w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[420px]">
+      <div
+        className={`absolute inset-0 rounded-full border-2 border-dashed border-lime-300 ${reduce ? "" : "animate-spin-slow"}`}
+        aria-hidden="true"
+      />
+      <div className="absolute inset-[12%] rounded-full bg-white/70 shadow-card ring-1 ring-lime-200 backdrop-blur" aria-hidden="true" />
+
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-tang-400 to-lemon-300 text-ink shadow-glow">
+          <WashingMachine className="h-7 w-7" aria-hidden="true" />
+        </span>
+        <p className="mt-3 font-heading text-lg font-extrabold text-ink">Wash cycle</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-lime-700">Open 24/7</p>
+      </div>
+
+      {processSteps.map((step, i) => {
+        const Icon = iconMap[step.icon] ?? Sparkles;
+        const angle = (-90 + i * 72) * (Math.PI / 180);
+        const x = 50 + 42 * Math.cos(angle);
+        const y = 50 + 42 * Math.sin(angle);
+        return (
+          <div
+            key={step.num}
+            className="absolute flex flex-col items-center"
+            style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}
+          >
+            <span className="glass flex h-12 w-12 items-center justify-center rounded-full shadow-card ring-1 ring-white/90 sm:h-14 sm:w-14">
+              <Icon className="h-5 w-5 text-tang-600 sm:h-6 sm:w-6" aria-hidden="true" />
+            </span>
+            <span className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-ink sm:text-[11px]">
+              {step.short}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function HowItWorks() {
+
+  return (
+    <Section id="how-it-works" ariaLabelledBy="how-title" className="bg-warm-100">
       <Container>
         <SectionHeader
           id="how-title"
           eyebrow="How it works"
-          title="Three steps to"
-          accent="clarity"
-          description="Booking a test with DexMedix takes about two minutes — no queues, no guesswork."
+          title="Five steps to"
+          accent="fresh"
+          description="Booking with Raymie's takes about two minutes — no queues, no guesswork, no weekend spent over a wash basin."
         />
 
-        <div className="relative mt-16">
-          {/* Dotted connecting path (desktop) */}
-          <svg
-            viewBox="0 0 1000 60"
-            className="pointer-events-none absolute left-0 right-0 top-8 hidden h-14 w-full lg:block"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M120 30 C 300 -10, 400 70, 500 30 S 700 -10, 880 30"
-              stroke="#B5122B"
-              strokeWidth="2.5"
-              strokeDasharray="2 12"
-              strokeLinecap="round"
-              opacity="0.45"
-            />
-          </svg>
+        <div className="relative mt-16 grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <Reveal>
+            <Dial />
+          </Reveal>
 
-          <ol className="relative grid gap-10 lg:grid-cols-3 lg:gap-8">
-            {steps.map(({ num, title, body, Icon }, i) => (
-              <Reveal key={num} delay={i * 100}>
-                <li className="relative flex flex-col items-center text-center lg:items-start lg:text-left">
-                  {/* Oversized outlined number */}
-                  <span
-                    className="select-none font-heading text-7xl font-extrabold leading-none tracking-tight text-transparent lg:text-8xl"
-                    style={{ WebkitTextStroke: "2px rgba(181,18,43,0.35)" }}
-                    aria-hidden="true"
-                  >
-                    {num}
-                  </span>
-
-                  <span className="-mt-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-crimson-700 to-crimson-500 text-white shadow-crimson">
-                    <Icon className="h-6 w-6" aria-hidden="true" />
-                  </span>
-
-                  <h3 className="mt-6 font-heading text-xl font-extrabold text-navy-950">
-                    {title}
-                  </h3>
-                  <p className="mt-3 max-w-xs text-sm leading-relaxed text-navy-500">
-                    {body}
-                  </p>
-                </li>
-              </Reveal>
-            ))}
+          <ol className="space-y-5">
+            {processSteps.map(({ num, title, body, icon }, i) => {
+              const Icon = iconMap[icon] ?? Sparkles;
+              return (
+                <Reveal key={num} delay={i * 90}>
+                  <li className="glass flex items-start gap-4 rounded-[1.5rem] p-5 ring-1 ring-white/90">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-tang-400 to-lemon-300 text-ink shadow-glow">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-lime-700">
+                        Step {num}
+                      </p>
+                      <h3 className="mt-0.5 font-heading text-lg font-extrabold text-ink">{title}</h3>
+                      <p className="mt-1 text-sm leading-relaxed text-muted">{body}</p>
+                    </div>
+                  </li>
+                </Reveal>
+              );
+            })}
           </ol>
         </div>
       </Container>

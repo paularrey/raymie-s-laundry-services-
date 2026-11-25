@@ -1,43 +1,34 @@
 import type { MetadataRoute } from "next";
+import { services } from "@/data/services";
 import { site } from "@/lib/site";
-import { getAllServices, getPackagesWithTests } from "@/lib/queries";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = site.url;
+export default function sitemap(): MetadataRoute.Sitemap {
+  const lastModified = new Date();
 
-  const staticRoutes: MetadataRoute.Sitemap = [
+  const staticRoutes = [
     "",
-    "/about",
     "/services",
-    "/packages",
-    "/book",
-    "/contact",
+    "/pricing",
+    "/how-it-works",
+    "/about",
     "/faqs",
+    "/contact",
+    "/book",
     "/privacy",
     "/terms",
   ].map((path) => ({
-    url: `${base}${path}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly" as const,
+    url: `${site.url}${path}`,
+    lastModified,
+    changeFrequency: "monthly" as const,
     priority: path === "" ? 1 : 0.7,
   }));
 
-  const [services, packages] = await Promise.all([
-    getAllServices(),
-    getPackagesWithTests(),
-  ]);
-  const serviceRoutes: MetadataRoute.Sitemap = services.map((s) => ({
-    url: `${base}/services/${s.slug}`,
-    lastModified: new Date(),
+  const serviceRoutes = services.map((s) => ({
+    url: `${site.url}/services/${s.slug}`,
+    lastModified,
     changeFrequency: "monthly" as const,
     priority: 0.6,
   }));
-  const packageRoutes: MetadataRoute.Sitemap = packages.map((p) => ({
-    url: `${base}/packages/${p.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.8,
-  }));
 
-  return [...staticRoutes, ...serviceRoutes, ...packageRoutes];
+  return [...staticRoutes, ...serviceRoutes];
 }
